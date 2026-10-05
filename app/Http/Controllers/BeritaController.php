@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Berita;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class BeritaController extends Controller
 {
@@ -17,7 +18,7 @@ class BeritaController extends Controller
                 $q->where('kategori', $kategori);
             })
             ->latest()
-            ->paginate(6)
+            ->paginate(3)
             ->withQueryString();
 
         return view('berita.index', compact('beritas'));
@@ -34,18 +35,26 @@ class BeritaController extends Controller
             'judul'    => 'required|max:255',
             'kategori' => 'required',
             'isi'      => 'required|min:10',
+            'gambar'   => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        Berita::create($data);
+        if ($request->hasFile('gambar')) {
+            $data['gambar'] = $request->file('gambar')->store('berita_images', 'public');
+        }
 
-        return redirect()->route('berita.index')
-            ->with('success', 'Berita berhasil ditambahkan!');
+        Berita::create($data);
+        return redirect()->route('berita.index')->with('success', 'Berita berhasil ditambahkan!');
     }
 
-    public function show(Berita $berita)
+public function show(Berita $berita)
     {
         $berita->increment('dilihat');
-        return view('berita.show', compact('berita'));
+        $beritaLain = Berita::where('id', '!=', $berita->id)
+                            ->latest()
+                            ->take(4)
+                            ->get();
+
+        return view('berita.show', compact('berita', 'beritaLain'));
     }
 
     public function edit(Berita $berita)
@@ -59,19 +68,27 @@ class BeritaController extends Controller
             'judul'    => 'required|max:255',
             'kategori' => 'required',
             'isi'      => 'required|min:10',
+            'gambar'   => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        $berita->update($data);
+        if ($request->hasFile('gambar')) {
+            if ($berita->gambar && !filter_var($berita->gambar, FILTER_VALIDATE_URL)) {
+                Storage::disk('public')->delete($berita->gambar);
+            }
+            $data['gambar'] = $request->file('gambar')->store('berita_images', 'public');
+        }
 
-        return redirect()->route('berita.index')
-            ->with('success', 'Berita berhasil diperbarui!');
+        $berita->update($data);
+        return redirect()->route('berita.index')->with('success', 'Berita berhasil diperbarui!');
     }
 
     public function destroy(Berita $berita)
     {
+        if ($berita->gambar && !filter_var($berita->gambar, FILTER_VALIDATE_URL)) {
+            Storage::disk('public')->delete($berita->gambar);
+        }
+        
         $berita->delete();
-
-        return redirect()->route('berita.index')
-            ->with('success', 'Berita berhasil dihapus!');
+        return redirect()->route('berita.index')->with('success', 'Berita berhasil dihapus!');
     }
 }

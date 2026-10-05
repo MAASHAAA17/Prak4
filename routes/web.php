@@ -8,4 +8,4 @@ Route::get('/', function () {
 });
 
 Route::resource('berita', BeritaController::class)
-    ->parameters(['berita' => 'berita']);
+->parameters(['berita' => 'berita']);
