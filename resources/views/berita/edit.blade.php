@@ -16,7 +16,7 @@
                     <div class="mb-3">
                         <label for="judul" class="form-label fw-semibold">Judul Berita</label>
                         <input type="text" name="judul" id="judul" class="form-control"
-                               value="{{ old('judul', $berita->judul) }}">
+                        value="{{ old('judul', $berita->judul) }}">
                         @error('judul') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
 
